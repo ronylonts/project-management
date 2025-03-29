@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Vos Projets</h2>
+        
+        <div class="row">
+            {% for project in projects|slice:":3" %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ project.name }}</h5>
+                        <p class="card-text text-muted small">{{ project.description|truncatechars:60 }}</p>
+                        
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ project.progress.completion_rate }}%" 
+                                 aria-valuenow="{{ project.progress.completion_rate }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ project.progress.completion_rate }}%
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between small">
+                            <span>{{ project.progress.completed_tasks }}/{{ project.progress.total_tasks }} tâches</span>
+                            <span>{{ project.days_remaining }} jours restants</span>
+                        </div>
+                        
+                        <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary mt-2">Voir le projet</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info">Aucun projet trouvé.</div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <h2 class="mt-4">Vos Tâches</h2>
+        
+        <div class="list-group">
+            {% for task in assigned_tasks %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ task.title }}</h6>
+                    <small class="text-{% if task.is_overdue %}danger{% else %}muted{% endif %}">
+                        Échéance: {{ task.due_date|date:"d/m/Y" }}
+                    </small>
+                </div>
+                <p class="mb-1 small">{{ task.description|truncatechars:80 }}</p>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="progress flex-grow-1 me-2" style="height: 20px;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ task.progress }}%" 
+                             aria-valuenow="{{ task.progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ task.progress }}%
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-sm btn-outline-secondary update-progress" 
+                            data-task-id="{{ task.id }}">
+                        Mettre à jour
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">Aucune tâche assignée.</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Notifications</h5>
+                <span class="badge bg-primary rounded-pill">{{ notifications|length }}</span>
+            </div>
+            
+            <div class="list-group list-group-flush">
+                {% for notification in notifications %}
+                <a href="#" class="list-group-item list-group-item-action {% if not notification.is_read %}active{% endif %} mark-as-read" 
+                   data-notification-id="{{ notification.id }}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ notification.notification_type }}</h6>
+                        <small>{{ notification.created_at|timesince }}</small>
+                    </div>
+                    <p class="mb-1">{{ notification.message }}</p>
+                </a>
+                {% empty %}
+                <div class="list-group-item">
+                    <p class="mb-0 text-muted">Aucune notification.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="card-footer text-center">
+                <a href="#" class="btn btn-sm btn-outline-primary">Voir toutes les notifications</a>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Enregistrer du temps</h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="post" action="{% url 'log_time' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_task" class="form-label">Tâche</label>
+                        <select class="form-select" id="id_task" name="task" required>
+                            <option value="" selected disabled>Sélectionnez une tâche</option>
+                            {% for task in assigned_tasks %}
+                            <option value="{{ task.id }}">{{ task.title }} ({{ task.project.name }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="id_date" name="date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_hours" class="form-label">Heures</label>
+                        <input type="number" step="0.25" min="0.25" max="24" class="form-control" id="id_hours" name="hours" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="id_description" name="description" rows="2"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Marquer les notifications comme lues
+    $('.mark-as-read').click(function(e) {
+        e.preventDefault();
+        var notificationId = $(this).data('notification-id');
+        var $item = $(this);
+        
+        $.ajax({
+            url: '/notifications/' + notificationId + '/mark-as-read/',
+            method: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function() {
+                $item.removeClass('active');
+            }
+        });
+    });
+    
+    // Mettre à jour la progression des tâches
+    $('.update-progress').click(function() {
+        var taskId = $(this).data('task-id');
+        var newProgress = prompt("Entrez la nouvelle progression (0-100):", "0");
+        
+        if (newProgress !== null && !isNaN(newProgress)) {
+            newProgress = parseInt(newProgress);
+            
+            if (newProgress >= 0 && newProgress <= 100) {
+                $.ajax({
+                    url: '/tasks/' + taskId + '/update-progress/',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        progress: newProgress,
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    }),
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert(response.error);
+                        }
+                    }
+                });
+            } else {
+                alert("La progression doit être entre 0 et 100");
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
