@@ -1,0 +1,374 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ project.name }} - Détails{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-project-diagram me-2"></i>{{ project.name }}
+        <span class="badge bg-{{ project.get_status_badge }} align-text-bottom ms-2">
+            {{ project.get_status_display }}
+        </span>
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'project_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+            <a href="{% url 'project_update' project.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit me-1"></i> Modifier
+            </a>
+        </div>
+        <button type="button" class="btn btn-sm btn-danger">
+            <i class="fas fa-trash me-1"></i> Supprimer
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations principales -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-info-circle me-1"></i>Informations du projet
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Description</h5>
+                        <p class="text-muted">
+                            {% if project.description %}
+                                {{ project.description }}
+                            {% else %}
+                                <span class="fst-italic">Aucune description fournie</span>
+                            {% endif %}
+                        </p>
+                        
+                        <h5 class="mt-4">Dates</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Début:</strong> {{ project.start_date|date:"d/m/Y" }}</li>
+                            <li><strong>Fin:</strong> {{ project.end_date|date:"d/m/Y" }}</li>
+                            <li><strong>Durée:</strong> {{ project.duration }} jours</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Progression</h5>
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div class="progress-bar bg-{{ project.get_progress_color }} progress-bar-striped" 
+                                 role="progressbar" 
+                                 style="width: {{ project.progress }}%"
+                                 aria-valuenow="{{ project.progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ project.progress }}%
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Tâches complétées</span>
+                                <span>{{ project.completed_tasks_count }}/{{ project.total_tasks_count }}</span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" 
+                                     role="progressbar" 
+                                     style="width: {{ project.tasks_completion_percentage }}%"
+                                     aria-valuenow="{{ project.tasks_completion_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">Budget</h5>
+                        {% if project.budget %}
+                        <div class="d-flex align-items-center">
+                            <span class="h4 me-2">{{ project.budget }} €</span>
+                            <span class="badge bg-{{ project.get_budget_status_badge }}">
+                                {{ project.get_budget_status }}
+                            </span>
+                        </div>
+                        <small class="text-muted">
+                            {{ project.budget_utilized_percentage }}% du budget utilisé
+                        </small>
+                        {% else %}
+                        <p class="text-muted">Aucun budget défini</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tâches du projet -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tasks me-1"></i>Tâches du projet
+                </h6>
+                <div>
+                    <a href="{% url 'task_create' project.id %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i> Ajouter une tâche
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Statut</th>
+                                <th>Priorité</th>
+                                <th>Échéance</th>
+                                <th>Assigné à</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in project.tasks.all %}
+                            <tr class="task-priority-{{ task.priority|lower }}">
+                                <td>
+                                    <a href="{% url 'task_detail' task.id %}" class="text-decoration-none">
+                                        {{ task.title }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ task.get_status_badge }}">
+                                        {{ task.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ task.get_priority_badge }}">
+                                        {{ task.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td>{{ task.due_date|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if task.assigned_to %}
+                                    <img src="{{ task.assigned_to.profile.image.url }}" 
+                                         class="rounded-circle me-1" width="25" height="25"
+                                         alt="{{ task.assigned_to.username }}">
+                                    {{ task.assigned_to.username }}
+                                    {% else %}
+                                    <span class="text-muted">Non assigné</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'task_detail' task.id %}" 
+                                           class="btn btn-primary btn-sm"
+                                           data-bs-toggle="tooltip" title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'task_update' task.id %}" 
+                                           class="btn btn-info btn-sm"
+                                           data-bs-toggle="tooltip" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'task_delete' task.id %}" 
+                                           class="btn btn-danger btn-sm"
+                                           data-bs-toggle="tooltip" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="fas fa-tasks fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted">Aucune tâche pour ce projet</p>
+                                    <a href="{% url 'task_create' project.id %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-plus me-1"></i> Créer une tâche
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar droite -->
+    <div class="col-lg-4">
+        <!-- Membres de l'équipe -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-users me-1"></i>Membres de l'équipe
+                </h6>
+                <div>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                        <i class="fas fa-plus me-1"></i> Ajouter
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for member in project.members.all %}
+                    <div class="list-group-item">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ member.profile.image.url }}" 
+                                 class="rounded-circle me-3" width="40" height="40"
+                                 alt="{{ member.username }}">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ member.get_full_name }}</h6>
+                                <small class="text-muted">{{ member.username }}</small>
+                            </div>
+                            <span class="badge bg-secondary">{{ member.get_role_display }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucun membre dans ce projet</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Fichiers joints -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-paperclip me-1"></i>Fichiers joints
+                </h6>
+                <div>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+                        <i class="fas fa-upload me-1"></i> Uploader
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for file in project.files.all %}
+                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-{{ file.get_file_type }} me-3 text-{{ file.get_file_color }}"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ file.name }}</h6>
+                                <small class="text-muted">{{ file.file.size|filesizeformat }} - {{ file.uploaded_at|timesince }}</small>
+                            </div>
+                            <i class="fas fa-download text-muted"></i>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-folder-open fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucun fichier joint</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Activités récentes -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-1"></i>Activités récentes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for activity in recent_activities %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-{{ activity.get_icon }} bg-{{ activity.get_color }}"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <p class="mb-1">{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.created_at|timesince }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucune activité récente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un membre</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'project_add_member' project.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="memberSelect" class="form-label">Membre</label>
+                        <select class="form-select" id="memberSelect" name="user_id">
+                            {% for user in available_users %}
+                            <option value="{{ user.id }}">{{ user.get_full_name }} ({{ user.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="roleSelect" class="form-label">Rôle</label>
+                        <select class="form-select" id="roleSelect" name="role">
+                            <option value="MEMBER">Membre</option>
+                            <option value="MANAGER">Manager</option>
+                            <option value="ADMIN">Administrateur</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadFileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Uploader un fichier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'project_upload_file' project.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="fileName" class="form-label">Nom du fichier</label>
+                        <input type="text" class="form-control" id="fileName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fileUpload" class="form-label">Fichier</label>
+                        <input class="form-control" type="file" id="fileUpload" name="file" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Uploader</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Initialiser les tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Liste des Tâches{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tasks me-2"></i>Liste des Tâches
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> Exporter
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-filter me-1"></i> Filtrer
+            </button>
+        </div>
+        <a href="{% url 'task_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nouvelle Tâche
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-filter me-1"></i>Filtres
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Statut</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="priority" class="form-label">Priorité</label>
+                <select id="priority" name="priority" class="form-select">
+                    <option value="">Toutes les priorités</option>
+                    {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if request.GET.priority == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="project" class="form-label">Projet</label>
+                <select id="project" name="project" class="form-select">
+                    <option value="">Tous les projets</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}" {% if request.GET.project == project.id|stringformat:"s" %}selected{% endif %}>
+                        {{ project.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="sort" class="form-label">Trier par</label>
+                <select id="sort" name="sort" class="form-select">
+                    <option value="-due_date" {% if request.GET.sort == '-due_date' %}selected{% endif %}>Échéance (proche)</option>
+                    <option value="due_date" {% if request.GET.sort == 'due_date' %}selected{% endif %}>Échéance (lointaine)</option>
+                    <option value="-priority" {% if request.GET.sort == '-priority' %}selected{% endif %}>Priorité (haute)</option>
+                    <option value="priority" {% if request.GET.sort == 'priority' %}selected{% endif %}>Priorité (basse)</option>
+                    <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Date (récent)</option>
+                    <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Date (ancien)</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i> Appliquer
+                    </button>
+                    <a href="{% url 'task_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i> Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des tâches -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-list me-1"></i>Résultats ({{ tasks.count }})
+        </h6>
+        <div class="dropdown no-arrow">
+            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" 
+               data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow animated--fade-in" 
+                aria-labelledby="dropdownMenuLink">
+                <li><a class="dropdown-item" href="#">Exporter en CSV</a></li>
+                <li><a class="dropdown-item" href="#">Exporter en Excel</a></li>
+                <li><div class="dropdown-divider"></div></li>
+                <li><a class="dropdown-item" href="#">Imprimer la liste</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if tasks %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tâche</th>
+                        <th>Projet</th>
+                        <th>Statut</th>
+                        <th>Priorité</th>
+                        <th>Échéance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in tasks %}
+                    <tr class="task-priority-{{ task.priority|lower }}">
+                        <td>
+                            <a href="{% url 'task_detail' task.id %}" class="text-decoration-none">
+                                {{ task.title }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{% url 'project_detail' task.project.id %}" class="text-decoration-none">
+                                {{ task.project.name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ task.get_status_badge }}">
+                                {{ task.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ task.get_priority_badge }}">
+                                {{ task.get_priority_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if task.is_overdue %}
+                            <span class="text-danger">{{ task.due_date|date:"d/m/Y" }}</span>
+                            <small class="text-danger d-block">(en retard)</small>
+                            {% else %}
+                            {{ task.due_date|date:"d/m/Y" }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'task_detail' task.id %}" 
+                                   class="btn btn-primary btn-sm"
+                                   data-bs-toggle="tooltip" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'task_update' task.id %}" 
+                                   class="btn btn-info btn-sm"
+                                   data-bs-toggle="tooltip" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'task_delete' task.id %}" 
+                                   class="btn btn-danger btn-sm"
+                                   data-bs-toggle="tooltip" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <i class="fas fa-tasks fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune tâche trouvée</p>
+                            <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i> Créer une tâche
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-tasks fa-3x text-muted mb-4"></i>
+            <h5 class="text-muted">Aucune tâche trouvée</h5>
+            <p class="text-muted mb-4">Essayez de modifier vos filtres ou créez une nouvelle tâche</p>
+            <a href="{% url 'task_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Créer une tâche
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        {% include 'components/pagination.html' with page_obj=page_obj %}
+        {% endif %}
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Initialiser les tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+{% endblock %}
+{% endblock %}
