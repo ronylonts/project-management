@@ -1,0 +1,40 @@
+<div class="sticky-top pt-3">
+    <ul class="nav flex-column">
+        <li class="nav-item mb-2">
+            <a class="nav-link text-white" href="{% url 'project_dashboard' %}">
+                <i class="fas fa-tachometer-alt me-2"></i> Tableau de bord
+            </a>
+        </li>
+        <li class="nav-item mb-2">
+            <a class="nav-link text-white" href="{% url 'project_list' %}">
+                <i class="fas fa-project-diagram me-2"></i> Mes projets
+            </a>
+        </li>
+        <li class="nav-item mb-2">
+            <a class="nav-link text-white" href="{% url 'task_list' %}">
+                <i class="fas fa-tasks me-2"></i> Mes tâches
+            </a>
+        </li>
+        <li class="nav-item mb-2">
+            <a class="nav-link text-white" href="#">
+                <i class="fas fa-calendar-alt me-2"></i> Calendrier
+            </a>
+        </li>
+        <li class="nav-item mb-2">
+            <a class="nav-link text-white" href="#">
+                <i class="fas fa-chart-bar me-2"></i> Rapports
+            </a>
+        </li>
+        <li class="nav-item mt-4 pt-3 border-top">
+            <small class="text-muted">PROJETS RÉCENTS</small>
+        </li>
+        {% for project in recent_projects|slice:":5" %}
+        <li class="nav-item">
+            <a class="nav-link text-white small" href="{% url 'project_detail' project.id %}">
+                <i class="fas fa-circle-notch fa-xs me-2 text-{{ project.get_status_badge }}"></i>
+                {{ project.name|truncatechars:20 }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>

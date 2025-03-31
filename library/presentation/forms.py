@@ -1,12 +1,10 @@
 from django import forms
-from django.core.exceptions import ValidationError
-from ..data import models
+from library.data.models import Project, Task
 
 class ProjectForm(forms.ModelForm):
-    """Formulaire pour la création et modification de projets"""
     class Meta:
-        model = models.Project
-        fields = ['name', 'description', 'start_date', 'end_date', 'budget', 'members']
+        model = Project
+        fields = ['name', 'description', 'start_date', 'end_date', 'status', 'budget']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
@@ -18,66 +16,43 @@ class ProjectForm(forms.ModelForm):
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
         
-        if start_date and end_date and end_date < start_date:
-            raise ValidationError("La date de fin doit être après la date de début")
+        if start_date and end_date and start_date > end_date:
+            raise forms.ValidationError("La date de fin doit être postérieure à la date de début")
         
         return cleaned_data
 
 class TaskForm(forms.ModelForm):
-    """Formulaire pour la création et modification de tâches"""
     class Meta:
-        model = models.Task
-        fields = ['title', 'description', 'due_date', 'priority', 'assigned_to', 'depends_on']
+        model = Task
+        fields = ['title', 'description', 'project', 'status', 'priority', 'due_date', 'assigned_to', 'tags']
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 3}),
-            'depends_on': forms.SelectMultiple(attrs={'class': 'select2'}),
         }
     
     def __init__(self, *args, **kwargs):
-        project_id = kwargs.pop('project_id', None)
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
-        if project_id:
-            # Filtrer les tâches dépendantes pour n'inclure que celles du même projet
-            self.fields['depends_on'].queryset = models.Task.objects.filter(project_id=project_id).exclude(pk=self.instance.pk)
-            
-            # Filtrer les utilisateurs assignables pour n'inclure que les membres du projet
-            self.fields['assigned_to'].queryset = models.User.objects.filter(
-                Q(managed_projects__id=project_id) | Q(projects__id=project_id)
+        if self.user:
+            self.fields['project'].queryset = Project.objects.filter(members=self.user)
+            self.fields['assigned_to'].queryset = User.objects.filter(
+                projectmembership__project__in=self.user.managed_projects.all()
             ).distinct()
     
     def clean(self):
         cleaned_data = super().clean()
         due_date = cleaned_data.get('due_date')
+        project = cleaned_data.get('project')
         
-        if due_date and due_date < date.today():
-            raise ValidationError("La date d'échéance ne peut pas être dans le passé")
+        if due_date and project:
+            if due_date < project.start_date:
+                raise forms.ValidationError(
+                    "La date d'échéance ne peut pas être antérieure au début du projet"
+                )
+            if due_date > project.end_date:
+                raise forms.ValidationError(
+                    "La date d'échéance ne peut pas être postérieure à la fin du projet"
+                )
         
         return cleaned_data
-
-class TimeEntryForm(forms.ModelForm):
-    """Formulaire pour l'enregistrement du temps"""
-    class Meta:
-        model = models.TimeEntry
-        fields = ['task', 'date', 'hours', 'description']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'description': forms.Textarea(attrs={'rows': 2}),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        
-        if user:
-            # Filtrer les tâches pour n'inclure que celles assignées à l'utilisateur
-            self.fields['task'].queryset = models.Task.objects.filter(
-                Q(assigned_to=user) | Q(project__manager=user)
-            ).distinct()
-    
-    def clean_hours(self):
-        hours = self.cleaned_data.get('hours')
-        if hours <= 0:
-            raise ValidationError("Les heures doivent être supérieures à 0")
-        return hours

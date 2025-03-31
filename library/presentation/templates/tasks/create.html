@@ -1,0 +1,288 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Créer une nouvelle tâche{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-plus-circle me-2"></i>Créer une nouvelle tâche
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% if request.GET.back %}{{ request.GET.back }}{% else %}{% url 'task_list' %}{% endif %}" 
+           class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Annuler
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-info-circle me-1"></i>Informations de base
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                Titre <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.title.id_for_label }}" 
+                                   name="{{ form.title.name }}"
+                                   value="{{ form.title.value|default:'' }}"
+                                   required>
+                            {% for error in form.title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.project.id_for_label }}" class="form-label">
+                                Projet <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select {% if form.project.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.project.id_for_label }}" 
+                                    name="{{ form.project.name }}"
+                                    required>
+                                {% for project in user_projects %}
+                                <option value="{{ project.id }}" {% if form.project.value == project.id %}selected{% endif %}>
+                                    {{ project.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.project.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            Description
+                        </label>
+                        <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                  id="{{ form.description.id_for_label }}" 
+                                  name="{{ form.description.name }}" 
+                                  rows="3">{{ form.description.value|default:'' }}</textarea>
+                        {% for error in form.description.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                Statut <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select {% if form.status.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.status.id_for_label }}" 
+                                    name="{{ form.status.name }}"
+                                    required>
+                                {% for value, label in form.fields.status.choices %}
+                                <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.status.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                Priorité <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select {% if form.priority.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.priority.id_for_label }}" 
+                                    name="{{ form.priority.name }}"
+                                    required>
+                                {% for value, label in form.fields.priority.choices %}
+                                <option value="{{ value }}" {% if form.priority.value == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.priority.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.due_date.id_for_label }}" class="form-label">
+                                Échéance <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   class="form-control {% if form.due_date.errors %}is-invalid{% endif %}" 
+                                   id="{{ form.due_date.id_for_label }}" 
+                                   name="{{ form.due_date.name }}"
+                                   value="{{ form.due_date.value|default:''|date:'Y-m-d' }}"
+                                   required>
+                            {% for error in form.due_date.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.assigned_to.id_for_label }}" class="form-label">
+                                Assignée à
+                            </label>
+                            <select class="form-select {% if form.assigned_to.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.assigned_to.id_for_label }}" 
+                                    name="{{ form.assigned_to.name }}">
+                                <option value="">Non assignée</option>
+                                {% for user in team_members %}
+                                <option value="{{ user.id }}" {% if form.assigned_to.value == user.id %}selected{% endif %}>
+                                    {{ user.get_full_name }} ({{ user.username }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.assigned_to.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.tags.id_for_label }}" class="form-label">
+                                Étiquettes
+                            </label>
+                            <select class="form-select {% if form.tags.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.tags.id_for_label }}" 
+                                    name="{{ form.tags.name }}" multiple>
+                                {% for tag in available_tags %}
+                                <option value="{{ tag.id }}" {% if tag.id in form.tags.value %}selected{% endif %}>
+                                    {{ tag.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.tags.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-1"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aide à la création -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-question-circle me-1"></i>Conseils
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Titre</h6>
+                <p class="small text-muted">
+                    Soyez clair et concis. Ex: "Créer la page d'accueil" plutôt que "Page d'accueil".
+                </p>
+                
+                <h6 class="mt-3">Description</h6>
+                <p class="small text-muted">
+                    Décrivez en détail ce qui doit être fait, les étapes à suivre, les ressources disponibles.
+                </p>
+                
+                <h6 class="mt-3">Priorité</h6>
+                <p class="small text-muted">
+                    <span class="badge bg-danger me-1">Haute</span> Délai critique
+                    <br>
+                    <span class="badge bg-warning me-1">Moyenne</span> Important mais pas urgent
+                    <br>
+                    <span class="badge bg-success me-1">Basse</span> Peut attendre
+                </p>
+                
+                <h6 class="mt-3">Échéance</h6>
+                <p class="small text-muted">
+                    Fixez une date réaliste en accord avec l'assigné. Les tâches en retard apparaissent en rouge.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Prévisualisation -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-eye me-1"></i>Aperçu de la tâche
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Remplissez le formulaire pour voir un aperçu</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Mise à jour en temps réel de l'aperçu
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('{{ form.title.id_for_label }}')
+    const descriptionInput = document.getElementById('{{ form.description.id_for_label }}')
+    const prioritySelect = document.getElementById('{{ form.priority.id_for_label }}')
+    const previewSection = document.querySelector('.card-body .text-center')
+    
+    function updatePreview() {
+        if (titleInput.value) {
+            const priority = prioritySelect.options[prioritySelect.selectedIndex].text
+            const priorityClass = {
+                'Haute': 'danger',
+                'Moyenne': 'warning',
+                'Basse': 'success'
+            }[priority] || 'secondary'
+            
+            previewSection.innerHTML = `
+                <h5 class="mb-3">${titleInput.value}</h5>
+                <p class="text-muted small">${descriptionInput.value || 'Aucune description fournie'}</p>
+                <span class="badge bg-${priorityClass} mb-3">${priority}</span>
+                <div class="progress mb-3">
+                    <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <span class="badge bg-secondary">À faire</span>
+            `
+        } else {
+            previewSection.innerHTML = `
+                <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Remplissez le formulaire pour voir un aperçu</p>
+            `
+        }
+    }
+    
+    titleInput.addEventListener('input', updatePreview)
+    descriptionInput.addEventListener('input', updatePreview)
+    prioritySelect.addEventListener('change', updatePreview)
+    
+    // Initialiser le select multiple pour les tags
+    new Choices('#{{ form.tags.id_for_label }}', {
+        removeItemButton: true,
+        searchEnabled: true,
+        placeholder: true,
+        placeholderValue: 'Sélectionnez des étiquettes'
+    })
+})
+</script>
+{% endblock %}
+{% endblock %}

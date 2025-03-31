@@ -1,0 +1,126 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Liste des Projets{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-project-diagram me-2"></i>Liste des Projets
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> Exporter
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-filter me-1"></i> Filtrer
+            </button>
+        </div>
+        <a href="{% url 'project_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nouveau Projet
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-filter me-1"></i>Filtres
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="status" class="form-label">Statut</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="sort" class="form-label">Trier par</label>
+                <select id="sort" name="sort" class="form-select">
+                    <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Date (récent)</option>
+                    <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Date (ancien)</option>
+                    <option value="name" {% if request.GET.sort == 'name' %}selected{% endif %}>Nom (A-Z)</option>
+                    <option value="-name" {% if request.GET.sort == '-name' %}selected{% endif %}>Nom (Z-A)</option>
+                    <option value="end_date" {% if request.GET.sort == 'end_date' %}selected{% endif %}>Échéance (proche)</option>
+                    <option value="-end_date" {% if request.GET.sort == '-end_date' %}selected{% endif %}>Échéance (lointaine)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="search" class="form-label">Recherche</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Nom du projet..." value="{{ request.GET.search }}">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter me-1"></i> Appliquer
+                    </button>
+                    <a href="{% url 'project_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-undo me-1"></i> Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des projets -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-list me-1"></i>Résultats ({{ projects.count }})
+        </h6>
+        <div class="dropdown no-arrow">
+            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" 
+               data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow animated--fade-in" 
+                aria-labelledby="dropdownMenuLink">
+                <li><a class="dropdown-item" href="#">Exporter en CSV</a></li>
+                <li><a class="dropdown-item" href="#">Exporter en Excel</a></li>
+                <li><div class="dropdown-divider"></div></li>
+                <li><a class="dropdown-item" href="#">Imprimer la liste</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if projects %}
+        <div class="row">
+            {% for project in projects %}
+            <div class="col-xl-4 col-md-6 mb-4">
+                {% include 'components/project_card.html' with project=project %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-3x text-muted mb-4"></i>
+            <h5 class="text-muted">Aucun projet trouvé</h5>
+            <p class="text-muted mb-4">Essayez de modifier vos filtres ou créez un nouveau projet</p>
+            <a href="{% url 'project_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Créer un projet
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        {% include 'components/pagination.html' with page_obj=page_obj %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

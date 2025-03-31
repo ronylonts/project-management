@@ -1,0 +1,323 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ task.title }} - Détails{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tasks me-2"></i>{{ task.title }}
+        <span class="badge bg-{{ task.get_status_badge }} align-text-bottom ms-2">
+            {{ task.get_status_display }}
+        </span>
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'task_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+            <a href="{% url 'task_update' task.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-edit me-1"></i> Modifier
+            </a>
+        </div>
+        <button type="button" class="btn btn-sm btn-danger">
+            <i class="fas fa-trash me-1"></i> Supprimer
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations principales -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-info-circle me-1"></i>Détails de la tâche
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Description</h5>
+                        <p class="text-muted">
+                            {% if task.description %}
+                                {{ task.description }}
+                            {% else %}
+                                <span class="fst-italic">Aucune description fournie</span>
+                            {% endif %}
+                        </p>
+                        
+                        <h5 class="mt-4">Dates</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Créée le:</strong> {{ task.created_at|date:"d/m/Y" }}</li>
+                            <li><strong>Échéance:</strong> 
+                                {% if task.is_overdue %}
+                                <span class="text-danger">{{ task.due_date|date:"d/m/Y" }} (en retard)</span>
+                                {% else %}
+                                {{ task.due_date|date:"d/m/Y" }}
+                                {% endif %}
+                            </li>
+                            <li><strong>Complétée le:</strong> 
+                                {% if task.completed_at %}
+                                {{ task.completed_at|date:"d/m/Y" }}
+                                {% else %}
+                                <span class="text-muted">Non complétée</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Métadonnées</h5>
+                        <ul class="list-unstyled">
+                            <li><strong>Projet:</strong> 
+                                <a href="{% url 'project_detail' task.project.id %}" class="text-decoration-none">
+                                    {{ task.project.name }}
+                                </a>
+                            </li>
+                            <li><strong>Priorité:</strong> 
+                                <span class="badge bg-{{ task.get_priority_badge }}">
+                                    {{ task.get_priority_display }}
+                                </span>
+                            </li>
+                            <li><strong>Statut:</strong> 
+                                <span class="badge bg-{{ task.get_status_badge }}">
+                                    {{ task.get_status_display }}
+                                </span>
+                            </li>
+                            <li><strong>Créée par:</strong> 
+                                {% if task.created_by %}
+                                <img src="{{ task.created_by.profile.image.url }}" 
+                                     class="rounded-circle me-1" width="20" height="20"
+                                     alt="{{ task.created_by.username }}">
+                                {{ task.created_by.username }}
+                                {% else %}
+                                <span class="text-muted">Inconnu</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Assignée à:</strong> 
+                                {% if task.assigned_to %}
+                                <img src="{{ task.assigned_to.profile.image.url }}" 
+                                     class="rounded-circle me-1" width="20" height="20"
+                                     alt="{{ task.assigned_to.username }}">
+                                {{ task.assigned_to.username }}
+                                {% else %}
+                                <span class="text-muted">Non assignée</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commentaires -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-comments me-1"></i>Commentaires
+                </h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCommentModal">
+                    <i class="fas fa-plus me-1"></i> Ajouter
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for comment in task.comments.all %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <img src="{{ comment.author.profile.image.url }}" 
+                                 class="rounded-circle" width="40" height="40"
+                                 alt="{{ comment.author.username }}">
+                        </div>
+                        <div class="timeline-content">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0">{{ comment.author.get_full_name }}</h6>
+                                <small class="text-muted">{{ comment.created_at|timesince }}</small>
+                            </div>
+                            <p class="mb-1">{{ comment.content }}</p>
+                            {% if comment.file %}
+                            <div class="mt-2">
+                                <a href="{{ comment.file.url }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-paperclip me-1"></i> {{ comment.file.name|basename }}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-comment-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucun commentaire pour cette tâche</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar droite -->
+    <div class="col-lg-4">
+        <!-- Actions rapides -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bolt me-1"></i>Actions rapides
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if task.status != 'completed' %}
+                    <button class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#completeTaskModal">
+                        <i class="fas fa-check-circle me-1"></i> Marquer comme complétée
+                    </button>
+                    {% else %}
+                    <button class="btn btn-warning mb-2" data-bs-toggle="modal" data-bs-target="#reopenTaskModal">
+                        <i class="fas fa-redo me-1"></i> Rouvrir la tâche
+                    </button>
+                    {% endif %}
+                    
+                    <button class="btn btn-info mb-2" data-bs-toggle="modal" data-bs-target="#assignTaskModal">
+                        <i class="fas fa-user-plus me-1"></i> Assigner à
+                    </button>
+                    
+                    <button class="btn btn-secondary mb-2" data-bs-toggle="modal" data-bs-target="#changeDueDateModal">
+                        <i class="fas fa-calendar-alt me-1"></i> Modifier l'échéance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fichiers joints -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-paperclip me-1"></i>Fichiers joints
+                </h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+                    <i class="fas fa-upload me-1"></i> Ajouter
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for file in task.files.all %}
+                    <a href="{{ file.file.url }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-{{ file.get_file_type }} me-3 text-{{ file.get_file_color }}"></i>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ file.name }}</h6>
+                                <small class="text-muted">{{ file.file.size|filesizeformat }} - {{ file.uploaded_at|timesince }}</small>
+                            </div>
+                            <i class="fas fa-download text-muted"></i>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-folder-open fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucun fichier joint</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-1"></i>Historique
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for activity in task.activities.all|slice:":5" %}
+                    <div class="timeline-item">
+                        <div class="timeline-icon">
+                            <i class="fas fa-{{ activity.get_icon }} bg-{{ activity.get_color }}"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <p class="mb-1">{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.created_at|timesince }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucune activité récente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if task.activities.count > 5 %}
+                <div class="text-center mt-2">
+                    <a href="#" class="btn btn-sm btn-outline-primary">
+                        Voir tout l'historique
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="addCommentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un commentaire</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'task_add_comment' task.id %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="commentContent" class="form-label">Commentaire</label>
+                        <textarea class="form-control" id="commentContent" name="content" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="commentFile" class="form-label">Fichier joint (optionnel)</label>
+                        <input class="form-control" type="file" id="commentFile" name="file">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="completeTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmer la complétion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'task_complete' task.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Êtes-vous sûr de vouloir marquer cette tâche comme complétée ?</p>
+                    <div class="mb-3">
+                        <label for="completionNotes" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" id="completionNotes" name="notes" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Initialiser les tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+{% endblock %}
+{% endblock %}

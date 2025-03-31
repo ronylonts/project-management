@@ -1,0 +1,81 @@
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 50px;
+}
+
+.timeline:before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: -50px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.timeline-content {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+/* Progress bars */
+.progress-sm {
+    height: 5px;
+}
+
+/* Cards */
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+}
+
+/* Priority borders */
+.task-priority-high {
+    border-left: 4px solid #dc3545 !important;
+}
+
+.task-priority-medium {
+    border-left: 4px solid #ffc107 !important;
+}
+
+.task-priority-low {
+    border-left: 4px solid #28a745 !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 30px;
+    }
+    
+    .timeline-icon {
+        left: -30px;
+        width: 30px;
+        height: 30px;
+    }
+}
